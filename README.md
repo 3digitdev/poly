@@ -7,7 +7,13 @@ A simple command for converting and processing data from your clipboard.
 Copy the `poly` file to `/usr/bin` and make it executable
 
 ```sh
-cd poly && sudo chmod +x poly && cp poly /usr/bin/poly
+sudo chmod +x poly && cp poly /usr/bin/poly
+```
+
+Install the requirements
+
+```sh
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -43,8 +49,8 @@ All of the following formats convert between each other:
 
 JWT requires two additional options:
 
-- `-s/--secret`: A secret string to encode/decode with
-- `-a/--algorithm`: An algorithm to encode/decode with
+- `-s, --secret`: A secret string to encode/decode with
+- `-a, --algorithm`: An algorithm to encode/decode with
 
 ## JSON formatting (`json`)
 
