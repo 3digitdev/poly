@@ -1,0 +1,324 @@
+#!/usr/bin/env python3
+import click
+import json
+import jwt
+import pyperclip
+import sys
+import toml
+import yaml
+
+from base64 import b64decode, b64encode
+from click import group, echo
+
+
+# region clipboard functions
+def get_clipboard() -> str:
+    data = pyperclip.paste()
+    if not data:
+        echo("No text in the clipboard")
+    return data
+
+
+def get_json_from_clipboard(verbose: bool = False) -> str:
+    try:
+        return json.loads(get_clipboard())
+    except json.JSONDecodeError as e:
+        echo("No valid json in the clipboard")
+        if verbose:
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+
+
+def get_yaml_from_clipboard(verbose: bool = False) -> str:
+    try:
+        return yaml.safe_load(get_clipboard())
+    except yaml.YAMLError as e:
+        echo("No valid yaml in the clipboard")
+        if verbose:
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+
+
+def get_toml_from_clipboard(verbose: bool = False) -> str:
+    try:
+        return toml.loads(get_clipboard())
+    except toml.decoder.TomlDecodeError as e:
+        echo("No valid toml in the clipboard")
+        if verbose:
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+
+
+def get_jwt_from_clipboard(secret: str = "", algorithm: str = "HS256", verbose: bool = False) -> str:
+    algorithm = algorithm.upper()
+    try:
+        return jwt.decode(get_clipboard(), secret, algorithms=[algorithm])
+    except jwt.exceptions.InvalidSignatureError:
+        echo("Signature verification failed")
+        sys.exit(1)
+    except jwt.exceptions.InvalidAlgorithmError:
+        echo("Invalid algorithm")
+        sys.exit(1)
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+
+# endregion
+
+
+# region converter functions
+def to_json(data: dict, pretty=False):
+    pyperclip.copy(json.dumps(data, indent=4) if pretty else json.dumps(data))
+    echo(pyperclip.paste())
+    echo(f"{'Formatted ' if pretty else ''}JSON also sent to clipboard")
+
+
+def to_yaml(data: dict):
+    pyperclip.copy(yaml.dump(data, sort_keys=False))
+    echo(pyperclip.paste())
+    echo("YAML also sent to clipboard")
+
+
+def to_toml(data: dict):
+    pyperclip.copy(toml.dumps(data))
+    echo(pyperclip.paste())
+    echo("TOML also sent to clipboard")
+
+
+def to_jwt(data: dict, secret: str, algorithm: str, verbose: bool):
+    algorithm = algorithm.upper()
+    try:
+        pyperclip.copy(jwt.encode(data, secret, algorithm=algorithm))
+    except NotImplementedError:
+        echo(f"Algorithm '{algorithm}' not supported")
+        sys.exit(1)
+    except ValueError as e:
+        echo(f"Could not encode data with '{algorithm}'")
+        if verbose:
+            echo(f"---------------\n{str(e)}")
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    echo(pyperclip.paste())
+    echo("JWT also sent to clipboard")
+
+
+def to_b64(data: str, verbose: bool):
+    try:
+        pyperclip.copy(b64encode(data.encode("utf-8")).decode("utf-8"))
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    echo(pyperclip.paste())
+    echo("Base64-encoded data also sent to clipboard")
+
+
+def from_b64(data: str, verbose: bool):
+    try:
+        pyperclip.copy(b64decode(data.encode("utf-8")).decode("utf-8"))
+    except Exception as e:
+        echo("Unknown error occurred")
+        if verbose:
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+        sys.exit(1)
+    echo(pyperclip.paste())
+    echo("Base64-decoded data also sent to clipboard")
+# endregion
+
+
+@group()
+def poly():
+    pass
+
+
+# region json commands
+@poly.group(name="json")
+def json_group():
+    pass
+
+
+@json_group.command()
+@click.option("-v", "--verbose", is_flag=True)
+def pretty(verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_json(data, pretty=True)
+
+
+@json_group.command()
+@click.option("-v", "--verbose", is_flag=True)
+def one_line(verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_json(data)
+
+
+@json_group.command(name="yaml")
+@click.option("-v", "--verbose", is_flag=True)
+def json_yaml(verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_yaml(data)
+
+
+@json_group.command(name="toml")
+@click.option("-v", "--verbose", is_flag=True)
+def json_toml(verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_toml(data)
+
+
+@json_group.command(name="jwt")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-v", "--verbose", is_flag=True)
+def json_jwt(secret: str, algorithm: str, verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_jwt(data, secret, algorithm, verbose)
+# endregion
+
+
+# region yaml commands
+@poly.group(name="yaml")
+def yaml_group():
+    pass
+
+
+@yaml_group.command(name="json")
+@click.option("-v", "--verbose", is_flag=True)
+def yaml_json(verbose: bool):
+    data = get_yaml_from_clipboard(verbose)
+    to_json(data)
+
+
+@yaml_group.command(name="toml")
+@click.option("-v", "--verbose", is_flag=True)
+def yaml_toml(verbose: bool):
+    data = get_yaml_from_clipboard(verbose)
+    to_toml(data)
+
+
+@yaml_group.command(name="jwt")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-v", "--verbose", is_flag=True)
+def yaml_jwt(secret: str, algorithm: str, verbose: bool):
+    data = get_yaml_from_clipboard(verbose)
+    to_jwt(data, secret, algorithm, verbose)
+# endregion
+
+
+# region toml commands
+@poly.group(name="toml")
+def toml_group():
+    pass
+
+
+@toml_group.command(name="yaml")
+@click.option("-v", "--verbose", is_flag=True)
+def toml_yaml(verbose: bool):
+    data = get_toml_from_clipboard(verbose)
+    to_yaml(data)
+
+
+@toml_group.command(name="json")
+@click.option("-v", "--verbose", is_flag=True)
+def toml_json(verbose: bool):
+    data = get_toml_from_clipboard(verbose)
+    to_json(data)
+
+
+@toml_group.command(name="jwt")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-v", "--verbose", is_flag=True)
+def toml_jwt(secret: str, algorithm: str, verbose: bool):
+    data = get_toml_from_clipboard(verbose)
+    echo(data)
+    to_jwt(data, secret, algorithm, verbose)
+# endregion
+
+
+# region jwt commands
+@poly.group(name="jwt")
+def jwt_group():
+    pass
+
+
+@jwt_group.command(name="json")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-p", "--pretty", is_flag=True, help="Format the JSON output")
+@click.option("-v", "--verbose", is_flag=True)
+def jwt_json(secret: str, algorithm: str, verbose: bool):
+    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+    to_json(data, pretty)
+
+
+@jwt_group.command(name="yaml")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-v", "--verbose", is_flag=True)
+def jwt_yaml(secret: str, algorithm: str, verbose: bool):
+    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+    to_yaml(data)
+
+
+@jwt_group.command(name="toml")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-v", "--verbose", is_flag=True)
+def jwt_toml(secret: str, algorithm: str, verbose: bool):
+    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+    to_toml(data)
+# endregion
+
+
+# region base64 commands
+@poly.group(name="b64")
+def b64_group():
+    pass
+
+
+@b64_group.command(name="from")
+@click.option("-v", "--verbose", is_flag=True)
+def from_cmd(verbose: bool):
+    data = get_clipboard()
+    from_b64(data, verbose)
+
+
+@b64_group.command()
+@click.option("-v", "--verbose", is_flag=True)
+def to(verbose: bool):
+    data = get_clipboard()
+    to_b64(data, verbose)
+# endregion
+
+
+if __name__ == "__main__":
+    poly()
