@@ -13,8 +13,9 @@ import yaml
 
 from base64 import b64decode, b64encode
 from click import group, echo
+from PIL import ImageColor
 from random import randrange
-from typing import Callable
+from typing import Callable, Tuple
 
 
 # region error handling
@@ -109,6 +110,35 @@ def get_query_params_from_clipboard(include_url: bool, decode: bool, quote_plus:
         echo("No valid query string in clipboard")
         sys.exit(1)
     return data
+
+
+@handle_unknown_error
+def get_hex_from_clipboard(rgba: bool = False) -> str:
+    small, large = (4, 8) if rgba else (3, 6)
+    reg = re.compile(f"#?(?:[A-F0-9]{{{small}}}|[A-F0-9]{{{large}}})")
+    data = get_clipboard()
+    if not reg.match(data.upper()):
+        echo("No valid hex color string on the clipboard")
+        sys.exit(1)
+    return data
+
+
+@handle_unknown_error
+def get_rgb_from_clipboard() -> Tuple[int, int, int]:
+    data = get_clipboard()
+    if not re.match(r"\(?\d{1,3}, ?\d{1,3}, ?\d{1,3}\)?", data):
+        echo("No valid RGB color string on the clipboard, needs to be format (0, 0, 0)")
+        sys.exit(1)
+    return ast.literal_eval(data)
+
+
+@handle_unknown_error
+def get_rgba_from_clipboard() -> Tuple[int, int, int, int]:
+    data = get_clipboard()
+    if not re.match(r"\(?\d{1,3}, ?\d{1,3}, ?\d{1,3}, ?\d{1,3}\)?", data):
+        echo("No valid RGBA color string on the clipboard, needs to be format (0, 0, 0, 0)")
+        sys.exit(1)
+    return ast.literal_eval(data)
 # endregion
 
 
@@ -506,6 +536,65 @@ def sha256_hash():
 def sha512_hash():
     data = get_clipboard()
     to_hash(data, "SHA512", hashlib.sha512)
+# endregion
+
+
+# region color conversion commands
+# region hex conversion
+@poly.group(name="hex", help="Convert Hex colors to other formats")
+def hex_group():
+    pass
+
+
+@hex_group.command(name="rgb", help="Convert Hex -> RGB")
+def hex_rgb():
+    data = get_hex_from_clipboard()
+    color = ImageColor.getcolor(data, "RGB")
+    pyperclip.copy(str(color))
+    echo(pyperclip.paste())
+    echo("RGB color also sent to clipboard")
+
+
+@hex_group.command(name="rgba", help="Convert Hex -> RGBA")
+def hex_rgba():
+    data = get_hex_from_clipboard()
+    color = ImageColor.getcolor(data, "RGBA")
+    pyperclip.copy(str(color))
+    echo(pyperclip.paste())
+    echo("RGBA color also sent to clipboard")
+# endregion
+
+
+# region rgb conversion
+@poly.group(name="rgb", help="Convert RGB colors to other formats")
+def rgb_group():
+    pass
+
+
+@rgb_group.command(name="hex", help="Convert RGB -> Hex")
+def rgb_hex():
+    r, g, b = get_rgb_from_clipboard()
+    hex = f"#{r:02x}{g:02x}{b:02x}".upper()
+    pyperclip.copy(hex)
+    echo(pyperclip.paste())
+    echo("Hex color also sent to clipboard")
+# endregion
+
+
+# region rgba conversion
+@poly.group(name="rgba", help="Convert RGBA colors to other formats")
+def rgba_group():
+    pass
+
+
+@rgba_group.command(name="hex", help="Convert RGBA -> Hex")
+def rgba_hex():
+    r, g, b, a = get_rgba_from_clipboard()
+    hex = f"#{r:02x}{g:02x}{b:02x}{a:02x}".upper()
+    pyperclip.copy(hex)
+    echo(pyperclip.paste())
+    echo("Hex color also sent to clipboard")
+# endregion
 # endregion
 
 

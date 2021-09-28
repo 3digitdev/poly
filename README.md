@@ -46,6 +46,12 @@ All of the following formats convert between each other:
 
 **NOTE:  Some data types (like `null` in TOML) won't convert and might be dropped!**
 
+Additionally, you can convert between color formats:
+
+- Hex _(e.g. `#123`, `#123456`, `#1234`, `#12345678`)_
+- RGB _(e.g. `(10, 10, 10)`, `(5,5,5)`)_
+- RGBA _(e.g. `(10, 10, 10, 10)`, `(5,5,5,5)`)_
+
 ### JWT Conversion
 
 Converting to JWT requires two additional options:
@@ -119,6 +125,7 @@ a=1&b=true&b=false&c=a%2Cb%2Cc&d=%7B%22foo%22%3A%20%22bar%22%2C%20%22baz%22%3A%2
 and decodes them back again.
 
 Both `encode`/`decode` also support `-q, --quote-plus` which allows for encoding spaces as `+` instead of `%20`
+
 
 ## String Manipulation
 
