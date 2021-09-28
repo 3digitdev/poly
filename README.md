@@ -6,6 +6,13 @@ A simple command for converting and processing data from your clipboard.
 
 Easy one-line install (requires confirmation):
 
+**NOTE:  NEVER BLINDLY RUN ANY SCRIPT THAT ASKS FOR `sudo`!**  
+Please inspect the file first by viewing the raw file from the URL 
+in the command below before piping it to `/bin/bash`.
+
+The install script needs sudo for copying the script into
+`/usr/bin` and setting it to be executable.
+
 ```sh
 sudo /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/3digitdev/poly/master/install.sh)"
 ```
