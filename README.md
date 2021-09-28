@@ -125,3 +125,4 @@ Both `encode`/`decode` also support `-q, --quote-plus` which allows for encoding
 - **Line sorting (`line-sort`)**: This will attempt to sort the lines of a `\n`-separated string in your clipboard
 - **Spongebob (`sponge`, `spongebob`)**: _I WoNDeR What ThIS doEs_
 - **Smart Quotes (`quotes`)**:  Replaces those stupid `“`/`”`/`‘`/`’` with proper quotes `"`/`'`
+- **[Un]Escape Text (`escape`/`unescape`)**:  Add/remove `\` in a string for given characters
