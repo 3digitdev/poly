@@ -37,6 +37,7 @@ def get_clipboard() -> str:
     data = pyperclip.paste()
     if not data:
         echo("No text in the clipboard")
+        sys.exit(1)
     return data
 
 
@@ -147,21 +148,18 @@ def get_rgba_from_clipboard() -> Tuple[int, int, int, int]:
 def to_json(data: dict, pretty=False):
     pyperclip.copy(json.dumps(data, indent=4) if pretty else json.dumps(data))
     echo(pyperclip.paste())
-    echo(f"{'Formatted ' if pretty else ''}JSON also sent to clipboard")
 
 
 @handle_unknown_error
 def to_yaml(data: dict):
     pyperclip.copy(yaml.dump(data, sort_keys=False))
     echo(pyperclip.paste())
-    echo("YAML also sent to clipboard")
 
 
 @handle_unknown_error
 def to_toml(data: dict):
     pyperclip.copy(toml.dumps(data))
     echo(pyperclip.paste())
-    echo("TOML also sent to clipboard")
 
 
 @handle_unknown_error
@@ -178,28 +176,24 @@ def to_jwt(data: dict, secret: str, algorithm: str, verbose: bool):
             echo(f"---------------\n{str(e)}")
         sys.exit(1)
     echo(pyperclip.paste())
-    echo("JWT also sent to clipboard")
 
 
 @handle_unknown_error
 def to_b64(data: str):
     pyperclip.copy(b64encode(data.encode("utf-8")).decode("utf-8"))
     echo(pyperclip.paste())
-    echo("Base64-encoded data also sent to clipboard")
 
 
 @handle_unknown_error
 def from_b64(data: str):
     pyperclip.copy(b64decode(data.encode("utf-8")).decode("utf-8"))
     echo(pyperclip.paste())
-    echo("Base64-decoded data also sent to clipboard")
 
 
 @handle_unknown_error
 def to_hash(data: str, hash: str, hashfn: Callable):
     pyperclip.copy(hashfn(data.encode("utf-8")).hexdigest())
     echo(pyperclip.paste())
-    echo(f"{hash} hash also sent to clipboard")
 
 
 @handle_unknown_error
@@ -247,7 +241,6 @@ def to_query_string(data: dict, encode: bool, quote_plus: bool = False):
     q_str = q_str[1:]
     pyperclip.copy(q_str)
     echo(pyperclip.paste())
-    echo("Query string also sent to the clipboard")
 # endregion
 
 
@@ -552,7 +545,6 @@ def hex_rgb():
     color = ImageColor.getcolor(data, "RGB")
     pyperclip.copy(str(color))
     echo(pyperclip.paste())
-    echo("RGB color also sent to clipboard")
 
 
 @hex_group.command(name="rgba", help="Convert Hex -> RGBA")
@@ -561,7 +553,6 @@ def hex_rgba():
     color = ImageColor.getcolor(data, "RGBA")
     pyperclip.copy(str(color))
     echo(pyperclip.paste())
-    echo("RGBA color also sent to clipboard")
 # endregion
 
 
@@ -577,7 +568,6 @@ def rgb_hex():
     hex = f"#{r:02x}{g:02x}{b:02x}".upper()
     pyperclip.copy(hex)
     echo(pyperclip.paste())
-    echo("Hex color also sent to clipboard")
 # endregion
 
 
@@ -593,7 +583,6 @@ def rgba_hex():
     hex = f"#{r:02x}{g:02x}{b:02x}{a:02x}".upper()
     pyperclip.copy(hex)
     echo(pyperclip.paste())
-    echo("Hex color also sent to clipboard")
 # endregion
 # endregion
 
@@ -606,7 +595,6 @@ def quotes():
     fixed = re.sub(r"[‘’]", "'", tmp)
     pyperclip.copy(fixed)
     echo(pyperclip.paste())
-    echo(f"Quote-corrected string also sent to clipboard")
 
 
 @poly.command(name="spongebob", help="I wondEr wHat ThIs does")
@@ -615,7 +603,6 @@ def spongebob():
     fixed = to_spongebob_case(unfixed)
     pyperclip.copy(fixed)
     echo(pyperclip.paste())
-    echo(to_spongebob_case("Fixed string also sent to clipboard"))
 
 
 @poly.command(name="sort-lines", help="Sort newline-separated lines")
@@ -628,7 +615,6 @@ def sort_lines(reverse: bool, strip_empty: bool):
         sorted_lines = [s for s in sorted_lines if s != ""]
     pyperclip.copy("\n".join(sorted_lines))
     echo(pyperclip.paste())
-    echo("Sorted lines also sent to clipboard")
 
 
 @poly.command(name="escape", help="Add escape character '\\' before character(s)")
@@ -642,7 +628,6 @@ def escape(characters: str):
         data = data.replace(char, f"\\{char}")
     pyperclip.copy(data)
     echo(pyperclip.paste())
-    echo("Escaped string also sent to clipboard")
 
 
 @poly.command(name="unescape", help="Remove escape character '\\' from before character(s)")
@@ -653,8 +638,6 @@ def unescape(characters: str):
         data = data.replace(f"\\{char}", char)
     pyperclip.copy(data)
     echo(pyperclip.paste())
-    echo("Un-escaped string also sent to clipboard")
-
 # endregion
 
 
