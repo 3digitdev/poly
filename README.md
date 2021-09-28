@@ -4,13 +4,13 @@ A simple command for converting and processing data from your clipboard.
 
 ## Installation
 
-Easy one-line install (requires confirmation):
+### Unix-based Install Script
 
 **NOTE:  NEVER BLINDLY RUN ANY SCRIPT THAT ASKS FOR `sudo`!**  
 Please inspect the file first by viewing the raw file from the URL 
 in the command below before piping it to `/bin/bash`.
 
-The install script needs sudo for copying the script into
+The install script needs `sudo` for copying the script into
 `/usr/bin` and setting it to be executable.
 
 ```sh
@@ -19,15 +19,27 @@ sudo /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/3digitdev/poly
 
 _(requires `sudo` permission, also will prompt to install Python packages):_
 
+### Windows Support [FUTURE]
+
+This script is not designed to support Windows at this time.
+
+Feel free to make a PR to add support
+and install instructions!
+
 ## Usage
+
+This script will expect you to have the text it will manipulate in your clipboard.
+When you run a command, it will do its job, and if it is successful, 
+**it will put the modified text back into your clipboard**, as well as send it
+to stdout.
 
 You can generally convert data with the following format:
 
 `poly <from_format> <to_format>[ options]`
 
-You can manipulate data with the following format:
+Any other generic command is simply
 
-`poly <data_format> <command>[ options]`
+`poly <command>[ options]`
 
 You can find some basic help from the `--help` option at any level:
 
@@ -35,6 +47,7 @@ You can find some basic help from the `--help` option at any level:
 poly --help
 poly json --help
 poly yaml --help
+...etc
 ```
 
 ## Conversions
