@@ -1,4 +1,4 @@
-git clone https://github.com/3digitdev/poly.git .
+git clone https://github.com/3digitdev/poly.git ./poly
 cd poly
 
 if [ -f "/usr/bin/poly"]; then
