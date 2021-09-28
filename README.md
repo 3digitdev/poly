@@ -98,19 +98,23 @@ will result in
 }
 ```
 
-`?foo=bar,baz,bat` will be converted as a string of `{"foo": "bar,baz,bat"}`, not as a list of `{"foo": ["bar", "baz", "bat"]}`_
+`?foo=bar,baz,bat` will be converted as a string of `{"foo": "bar,baz,bat"}`, not as a list of `{"foo": ["bar", "baz", "bat"]}`
 If you want a list to be built, simply use the same query param multiple times.
 
 More complex example (including list and complex object):
 
-assuming your clipboard contains `http://foo.bar.com?a=1&b=true&c=a,b,c&b=false&d={"foo":"bar"}`...
+assuming your clipboard contains
+```
+http://foo.bar.com?a=1&b=true&c=a,b,c&b=false&d={"foo":"bar"}
+```
 _(note that this contains a url! oooooo....)_
 
+running:
 ```sh
 poly query-string json --convert --include-url
 ```
 
-will result in
+will result in:
 ```json5
 {
   "url": "http://foo.bar.com",  // from --include-url
