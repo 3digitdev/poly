@@ -4,17 +4,13 @@ A simple command for converting and processing data from your clipboard.
 
 ## Installation
 
-Copy the `poly` file to `/usr/bin` and make it executable
+Easy one-line install (requires confirmation):
 
 ```sh
-sudo chmod +x poly && cp poly /usr/bin/poly
+sudo /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/3digitdev/poly/master/install.sh)"
 ```
 
-Install the requirements
-
-```sh
-pip install -r requirements.txt
-```
+_(requires `sudo` permission, also will prompt to install Python packages):_
 
 ## Usage
 
