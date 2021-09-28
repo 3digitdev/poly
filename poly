@@ -1,14 +1,34 @@
 #!/usr/bin/env python3
+import ast
 import click
+import hashlib
 import json
 import jwt
 import pyperclip
+import re
 import sys
 import toml
+import urllib.parse
 import yaml
 
 from base64 import b64decode, b64encode
 from click import group, echo
+from random import randrange
+from typing import Callable
+
+
+# region error handling
+def handle_unknown_error(f):
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            echo("Unknown error occurred")
+            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
+            echo(f"---------------\n{str(e)}")
+            sys.exit(1)
+    return wrapper
+# endregion
 
 
 # region clipboard functions
@@ -19,7 +39,8 @@ def get_clipboard() -> str:
     return data
 
 
-def get_json_from_clipboard(verbose: bool = False) -> str:
+@handle_unknown_error
+def get_json_from_clipboard(verbose: bool = False) -> dict:
     try:
         return json.loads(get_clipboard())
     except json.JSONDecodeError as e:
@@ -27,15 +48,10 @@ def get_json_from_clipboard(verbose: bool = False) -> str:
         if verbose:
             echo(f"---------------\n{str(e)}")
         sys.exit(1)
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
 
 
-def get_yaml_from_clipboard(verbose: bool = False) -> str:
+@handle_unknown_error
+def get_yaml_from_clipboard(verbose: bool = False) -> dict:
     try:
         return yaml.safe_load(get_clipboard())
     except yaml.YAMLError as e:
@@ -43,15 +59,10 @@ def get_yaml_from_clipboard(verbose: bool = False) -> str:
         if verbose:
             echo(f"---------------\n{str(e)}")
         sys.exit(1)
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
 
 
-def get_toml_from_clipboard(verbose: bool = False) -> str:
+@handle_unknown_error
+def get_toml_from_clipboard(verbose: bool = False) -> dict:
     try:
         return toml.loads(get_clipboard())
     except toml.decoder.TomlDecodeError as e:
@@ -59,15 +70,10 @@ def get_toml_from_clipboard(verbose: bool = False) -> str:
         if verbose:
             echo(f"---------------\n{str(e)}")
         sys.exit(1)
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
 
 
-def get_jwt_from_clipboard(secret: str = "", algorithm: str = "HS256", verbose: bool = False) -> str:
+@handle_unknown_error
+def get_jwt_from_clipboard(secret: str = "", algorithm: str = "HS256") -> dict:
     algorithm = algorithm.upper()
     try:
         return jwt.decode(get_clipboard(), secret, algorithms=[algorithm])
@@ -77,35 +83,58 @@ def get_jwt_from_clipboard(secret: str = "", algorithm: str = "HS256", verbose: 
     except jwt.exceptions.InvalidAlgorithmError:
         echo("Invalid algorithm")
         sys.exit(1)
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
 
+
+@handle_unknown_error
+def get_query_params_from_clipboard(include_url: bool, decode: bool, quote_plus: bool = False) -> dict:
+    url = pyperclip.paste()
+    parts = url.split("?")
+    if len(parts) == 2:
+        param_str = parts[1]
+        if include_url:
+            param_str += f"&url={parts[0]}"
+    elif len(parts) == 1:
+        param_str = parts[0]
+    else:
+        echo("No valid query string in clipboard")
+        sys.exit(1)
+    if decode:
+        param_str = urllib.parse.unquote_plus(param_str) if quote_plus else urllib.parse.unquote(param_str)
+    params = urllib.parse.parse_qs(param_str)
+    data = {}
+    try:
+        for k, v in params.items():
+            data[k] = v[0] if len(v) == 1 else v
+    except ValueError:
+        echo("No valid query string in clipboard")
+        sys.exit(1)
+    return data
 # endregion
 
 
 # region converter functions
+@handle_unknown_error
 def to_json(data: dict, pretty=False):
     pyperclip.copy(json.dumps(data, indent=4) if pretty else json.dumps(data))
     echo(pyperclip.paste())
     echo(f"{'Formatted ' if pretty else ''}JSON also sent to clipboard")
 
 
+@handle_unknown_error
 def to_yaml(data: dict):
     pyperclip.copy(yaml.dump(data, sort_keys=False))
     echo(pyperclip.paste())
     echo("YAML also sent to clipboard")
 
 
+@handle_unknown_error
 def to_toml(data: dict):
     pyperclip.copy(toml.dumps(data))
     echo(pyperclip.paste())
     echo("TOML also sent to clipboard")
 
 
+@handle_unknown_error
 def to_jwt(data: dict, secret: str, algorithm: str, verbose: bool):
     algorithm = algorithm.upper()
     try:
@@ -117,40 +146,78 @@ def to_jwt(data: dict, secret: str, algorithm: str, verbose: bool):
         echo(f"Could not encode data with '{algorithm}'")
         if verbose:
             echo(f"---------------\n{str(e)}")
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
         sys.exit(1)
     echo(pyperclip.paste())
     echo("JWT also sent to clipboard")
 
 
-def to_b64(data: str, verbose: bool):
-    try:
-        pyperclip.copy(b64encode(data.encode("utf-8")).decode("utf-8"))
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
+@handle_unknown_error
+def to_b64(data: str):
+    pyperclip.copy(b64encode(data.encode("utf-8")).decode("utf-8"))
     echo(pyperclip.paste())
     echo("Base64-encoded data also sent to clipboard")
 
 
-def from_b64(data: str, verbose: bool):
-    try:
-        pyperclip.copy(b64decode(data.encode("utf-8")).decode("utf-8"))
-    except Exception as e:
-        echo("Unknown error occurred")
-        if verbose:
-            echo(f"---------------\nClipboard:\n{pyperclip.paste()}")
-            echo(f"---------------\n{str(e)}")
-        sys.exit(1)
+@handle_unknown_error
+def from_b64(data: str):
+    pyperclip.copy(b64decode(data.encode("utf-8")).decode("utf-8"))
     echo(pyperclip.paste())
     echo("Base64-decoded data also sent to clipboard")
+
+
+@handle_unknown_error
+def to_hash(data: str, hash: str, hashfn: Callable):
+    pyperclip.copy(hashfn(data.encode("utf-8")).hexdigest())
+    echo(pyperclip.paste())
+    echo(f"{hash} hash also sent to clipboard")
+
+
+@handle_unknown_error
+def to_spongebob_case(data: str) -> str:
+    return "".join([c.upper() if randrange(0, 2) else c.lower() for c in data])
+
+
+@handle_unknown_error
+def convert_string_dict(data: dict) -> dict:
+    def convert_value(v: str):
+        if v.lower() in ["null", "none"]:
+            v = 'None'
+        elif v.lower() in ["true", "false"]:
+            v = f"{v[0].upper()}{v[1:].lower()}"
+        try:
+            v = ast.literal_eval(v)
+        except (ValueError, SyntaxError):
+            v = v
+        return v
+
+    return {
+        k: [convert_value(val) for val in value]
+        if isinstance(value, list)
+        else convert_value(value)
+        for k, value in data.items()
+    }
+
+
+@handle_unknown_error
+def to_query_string(data: dict, encode: bool, quote_plus: bool = False):
+    def fix_value(val):
+        if not isinstance(val, str):
+            val = json.dumps(val)
+        if encode:
+            return urllib.parse.quote_plus(val) if quote_plus else urllib.parse.quote(val)
+        return val
+
+    q_str = ""
+    for key, value in data.items():
+        if isinstance(value, list):
+            for v in value:
+                q_str += f"&{key}={fix_value(v)}"
+        else:
+            q_str += f"&{key}={fix_value(value)}"
+    q_str = q_str[1:]
+    pyperclip.copy(q_str)
+    echo(pyperclip.paste())
+    echo("Query string also sent to the clipboard")
 # endregion
 
 
@@ -200,6 +267,13 @@ def json_toml(verbose: bool):
 def json_jwt(secret: str, algorithm: str, verbose: bool):
     data = get_json_from_clipboard(verbose)
     to_jwt(data, secret, algorithm, verbose)
+
+
+@json_group.command(name="query-string")
+@click.option("-v", "--verbose", is_flag=True)
+def json_query_string(verbose: bool):
+    data = get_json_from_clipboard(verbose)
+    to_query_string(data, encode=False)
 # endregion
 
 
@@ -230,6 +304,13 @@ def yaml_toml(verbose: bool):
 def yaml_jwt(secret: str, algorithm: str, verbose: bool):
     data = get_yaml_from_clipboard(verbose)
     to_jwt(data, secret, algorithm, verbose)
+
+
+@yaml_group.command(name="query-string")
+@click.option("-v", "--verbose", is_flag=True)
+def yaml_query_string(verbose: bool):
+    data = get_yaml_from_clipboard(verbose)
+    to_query_string(data, encode=False)
 # endregion
 
 
@@ -261,6 +342,13 @@ def toml_jwt(secret: str, algorithm: str, verbose: bool):
     data = get_toml_from_clipboard(verbose)
     echo(data)
     to_jwt(data, secret, algorithm, verbose)
+
+
+@toml_group.command(name="query-string")
+@click.option("-v", "--verbose", is_flag=True)
+def toml_query_string(verbose: bool):
+    data = get_toml_from_clipboard(verbose)
+    to_query_string(data, encode=False)
 # endregion
 
 
@@ -274,28 +362,105 @@ def jwt_group():
 @click.option("-s", "--secret", required=True, help="The secret to use for decoding")
 @click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
 @click.option("-p", "--pretty", is_flag=True, help="Format the JSON output")
-@click.option("-v", "--verbose", is_flag=True)
-def jwt_json(secret: str, algorithm: str, verbose: bool):
-    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+def jwt_json(secret: str, algorithm: str):
+    data = get_jwt_from_clipboard(secret, algorithm)
     to_json(data, pretty)
 
 
 @jwt_group.command(name="yaml")
 @click.option("-s", "--secret", required=True, help="The secret to use for decoding")
 @click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
-@click.option("-v", "--verbose", is_flag=True)
-def jwt_yaml(secret: str, algorithm: str, verbose: bool):
-    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+def jwt_yaml(secret: str, algorithm: str):
+    data = get_jwt_from_clipboard(secret, algorithm)
     to_yaml(data)
 
 
 @jwt_group.command(name="toml")
 @click.option("-s", "--secret", required=True, help="The secret to use for decoding")
 @click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
-@click.option("-v", "--verbose", is_flag=True)
-def jwt_toml(secret: str, algorithm: str, verbose: bool):
-    data = get_jwt_from_clipboard(secret, algorithm.upper(), verbose)
+def jwt_toml(secret: str, algorithm: str):
+    data = get_jwt_from_clipboard(secret, algorithm)
     to_toml(data)
+
+
+@jwt_group.command(name="query-string")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+def jwt_query_string(secret: str, algorithm: str):
+    data = get_jwt_from_clipboard(secret, algorithm)
+    to_query_string(data, encode=False)
+# endregion
+
+
+# region query string commands
+@poly.group(name="query-string")
+def query_string():
+    pass
+
+
+@query_string.command(name="json")
+@click.option("-p", "--pretty", is_flag=True, help="If present, the JSON output will be prettified")
+@click.option("-c", "--convert", is_flag=True, help="If present, poly will attempt to convert the strings to valid types for JSON")
+@click.option("-u", "--include-url", is_flag=True, help="If present, the URL will also be included with the 'url' key")
+def query_string_json(pretty: bool, convert: bool, include_url: bool):
+    data = get_query_params_from_clipboard(include_url, decode=False)
+    if convert:
+        data = convert_string_dict(data)
+    to_json(data, pretty)
+
+
+@query_string.command(name="yaml")
+@click.option("-c", "--convert", is_flag=True, help="If present, poly will attempt to convert the strings to valid types for YAML")
+@click.option("-u", "--include-url", is_flag=True, help="If present, the URL will also be included with the 'url' key")
+def query_string_yaml(convert: bool, include_url: bool):
+    data = get_query_params_from_clipboard(include_url, decode=False)
+    if convert:
+        data = convert_string_dict(data)
+    to_yaml(data)
+
+
+@query_string.command(name="toml")
+@click.option("-c", "--convert", is_flag=True, help="If present, poly will attempt to convert the strings to valid types for TOML")
+@click.option("-u", "--include-url", is_flag=True, help="If present, the URL will also be included with the 'url' key")
+def query_string_toml(convert: bool, include_url: bool):
+    data = get_query_params_from_clipboard(include_url, decode=False)
+    if convert:
+        data = convert_string_dict(data)
+    to_toml(data)
+
+
+@query_string.command(name="jwt")
+@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-c", "--convert", is_flag=True, help="If present, poly will attempt to convert the strings to valid types for JSON")
+@click.option("-u", "--include-url", is_flag=True, help="If present, the URL will also be included with the 'url' key")
+@click.option("-v", "--verbose", is_flag=True)
+def query_string_jwt(secret: str, algorithm: str, convert: bool, include_url: bool, verbose: bool):
+    data = get_query_params_from_clipboard(include_url, decode=False)
+    if convert:
+        data = convert_string_dict(data)
+    to_jwt(data, secret, algorithm, verbose)
+# endregion
+
+
+# region url commands
+@poly.group(name="url")
+def poly_url():
+    pass
+
+
+@poly_url.command()
+@click.option("-q", "--quote-plus", is_flag=True, help="If present, will encode spaces as '+' rather than '%20'")
+def encode(quote_plus: bool):
+    data = get_query_params_from_clipboard(False, decode=False)
+    to_query_string(data, encode=True, quote_plus=quote_plus)
+
+
+@poly_url.command()
+@click.option("-q", "--quote-plus", is_flag=True, help="If present, this will decode the query string '+' as a space")
+def decode(quote_plus: bool):
+    data = get_query_params_from_clipboard(False, decode=True, quote_plus=quote_plus)
+    to_query_string(data, encode=False, quote_plus=quote_plus)
 # endregion
 
 
@@ -306,17 +471,84 @@ def b64_group():
 
 
 @b64_group.command(name="from")
-@click.option("-v", "--verbose", is_flag=True)
-def from_cmd(verbose: bool):
+def from_cmd():
     data = get_clipboard()
-    from_b64(data, verbose)
+    from_b64(data)
 
 
 @b64_group.command()
-@click.option("-v", "--verbose", is_flag=True)
-def to(verbose: bool):
+def to():
     data = get_clipboard()
-    to_b64(data, verbose)
+    to_b64(data)
+# endregion
+
+
+# region hashfunc commands
+@poly.command(name="md5")
+def md5_hash():
+    data = get_clipboard()
+    to_hash(data, "md5", hashlib.md5)
+
+
+@poly.command(name="sha1")
+def sha1_hash():
+    data = get_clipboard()
+    to_hash(data, "md5", hashlib.sha1)
+
+
+@poly.command(name="sha256")
+def sha256_hash():
+    data = get_clipboard()
+    to_hash(data, "md5", hashlib.sha256)
+
+
+@poly.command(name="sha512")
+def sha512_hash():
+    data = get_clipboard()
+    to_hash(data, "md5", hashlib.sha512)
+# endregion
+
+
+# region string manipulation commands
+@poly.command(name="quotes")
+def quotes():
+    unfixed = pyperclip.paste()
+    tmp = re.sub(r"[“”]", '"', unfixed)
+    fixed = re.sub(r"[‘’]", "'", tmp)
+    pyperclip.copy(fixed)
+    echo(pyperclip.paste())
+    echo(f"Quote-corrected string also sent to clipboard")
+
+
+@poly.command(name="sponge")
+def sponge():
+    unfixed = pyperclip.paste()
+    fixed = to_spongebob_case(unfixed)
+    pyperclip.copy(fixed)
+    echo(pyperclip.paste())
+    echo(to_spongebob_case("Fixed string also sent to clipboard"))
+
+
+@poly.command(name="spongebob")
+def spongebob():
+    unfixed = pyperclip.paste()
+    fixed = to_spongebob_case(unfixed)
+    pyperclip.copy(fixed)
+    echo(pyperclip.paste())
+    echo(to_spongebob_case("Fixed string also sent to clipboard"))
+
+
+@poly.command(name="sort-lines")
+@click.option("-r", "--reverse", is_flag=True, help="If present, sorting is reversed")
+@click.option("-s", "--strip-empty", is_flag=True, help="If present, empty lines will be stripped from the output")
+def sort_lines(reverse: bool, strip_empty: bool):
+    lines = pyperclip.paste().split("\n")
+    sorted_lines = sorted(lines, reverse=reverse)
+    if strip_empty:
+        sorted_lines = [s for s in sorted_lines if s != ""]
+    pyperclip.copy("\n".join(sorted_lines))
+    echo(pyperclip.paste())
+    echo("Sorted lines also sent to clipboard")
 # endregion
 
 
