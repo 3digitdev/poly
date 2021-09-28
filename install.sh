@@ -7,5 +7,7 @@ if [ -f "/usr/bin/poly" ]; then
 else
   cp poly/poly /usr/bin/poly
   rm -rf poly/
+  chmod +x /usr/bin/poly
+  echo "Poly installed!"
   exit 0
 fi
