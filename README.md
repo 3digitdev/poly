@@ -58,7 +58,7 @@ All of the following formats convert between each other:
 - YAML
 - TOML
 - JWT
-- URL Query String
+- URL Query String (see below for what this means)
 
 **NOTE:  Some data types (like `null` in TOML) won't convert and might be dropped!**
 
@@ -75,7 +75,7 @@ Converting to JWT requires two additional options:
 - `-s, --secret`: A secret string to encode/decode with
 - `-a, --algorithm`: An algorithm to encode/decode with
 
-### Query String Type Conversion
+### URL Query String Type Conversion
 
 When converting from a query string you can use the `-c, --convert` flag to tell `poly` to attempt to convert
 all the values in the query string.  They all start as strings, but it will attempt to do things like convert `"true"` to `true` for JSON/YAML, etc.
@@ -83,7 +83,7 @@ This only works for the basic data types; it will not do anything smart like nes
 
 _Example:_
 
-assuming your clipboard contains `http://foo.bar.com?a=1&b=true&c=a,b,c`...
+assuming your clipboard contains `a=1&b=true&c=a,b,c`...
 
 ```sh
 poly query-string json --convert
@@ -97,9 +97,31 @@ will result in
   "c": "a,b,c"   // note that this is NOT ["a", "b", "c"]
 }
 ```
-`?foo=bar,baz,bat` will be converted as a string of `{"foo": "bar,baz,bat"}`, not as a list of `{"foo": ["bar", "baz", "bat"]}`_
 
-This is done using the Python builtin `ast.literal_eval()` -- a completely save eval that will attempt simply to convert the string to a valid Python literal, and does not execute the code.
+`?foo=bar,baz,bat` will be converted as a string of `{"foo": "bar,baz,bat"}`, not as a list of `{"foo": ["bar", "baz", "bat"]}`_
+If you want a list to be built, simply use the same query param multiple times.
+
+More complex example (including list and complex object):
+
+assuming your clipboard contains `http://foo.bar.com?a=1&b=true&c=a,b,c&b=false&d={"foo":"bar"}`...
+_(note that this contains a url! oooooo....)_
+
+```sh
+poly query-string json --convert --include-url
+```
+
+will result in
+```json5
+{
+  "url": "http://foo.bar.com",  // from --include-url
+  "a": 1,
+  "b": [true, false],  // multiple 'b' params were combined into a list
+  "c": "a,b,c",   // note that this is NOT ["a", "b", "c"]
+  "d": {"foo": "bar"}   // oooooo fancy
+}
+```
+
+This is all done using the Python builtin `ast.literal_eval()` -- a completely safe function that will attempt simply to convert the string to a valid Python literal, but **does not execute the string as code.**
 
 ## JSON formatting (`json`)
 
