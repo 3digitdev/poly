@@ -10,9 +10,9 @@ else
     read -p "Do you want to continue? (y/n) " -r
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Installing dependencies..."
-        /usr/bin/python3 -m pip install -r poly/requirements.txt
-        cp poly/poly /usr/bin/poly
-        chmod +x /usr/bin/poly
+        /usr/bin/python3 -m pip install --user -r poly/requirements.txt
+        sudo cp poly/poly /usr/bin/poly
+        sudo chmod +x /usr/bin/poly
         rm -rf poly/
         echo "Poly installed."
         exit 0
