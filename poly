@@ -241,6 +241,61 @@ def to_query_string(data: dict, encode: bool, quote_plus: bool = False):
     q_str = q_str[1:]
     pyperclip.copy(q_str)
     echo(pyperclip.paste())
+
+
+@handle_unknown_error
+def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
+    # Pulls emoji reactions off the chat
+    emoji_regex = re.compile(r":.+:")
+    # Identifies when a line is a user's name/datetime
+    sender_regex = re.compile(r"^(?P<name>.+) {2}(?P<time>\d+:\d+)$")
+    # Identifies the timestamp for "secondary lines" after the first message for a user
+    secondary_regex = re.compile(r"^(?P<time>\d+:\d+)$")
+    # Identifies when you copied an image/video and it shows a title
+    # Probably missing some extensions but this should cover like 99% of them
+    attach_regex = re.compile(r"^[\w_\-]*\.(png|jpe?g|gif|tiff|mov|mp4|m4v|webm|mkv|mpe?g4?|avi|vid) ?$")
+    lines = [x for x in data.split("\n") if x != ""]
+    final = []
+    # If they copy starting at a "secondary line" we won't know who sent the first message
+    sender = "Unknown"
+    # Tracking for the times on the next "secondary line"
+    time = ""
+    # Tracking for finding a secondary line
+    found_next = False
+    # Tracking for when you're finding emoji reactions.  So many reactions...
+    found_emoji = False
+    for line in lines:
+        # If they want, we skip those image/video titles
+        if strip_img and attach_regex.match(line):
+            continue
+        # Drop this crap
+        if emoji_regex.match(line):
+            found_emoji = True
+            continue
+        # This is for the "emoji count" for each reaction.
+        # Shows up as its own line cuz why not?
+        if found_emoji and re.match(r"\d+", line):
+            found_emoji = False
+            continue
+        found_emoji = False
+        # Primary sender line match
+        sender_match = sender_regex.match(line)
+        if sender_match:
+            parts = sender_match.groupdict()
+            sender = parts["name"]
+            time = parts["time"]
+            continue
+        # "Secondary line" match
+        sec_match = secondary_regex.match(line)
+        if sec_match and not found_next:  # Accounts for people sending the time as a message
+            time = sec_match.groupdict()["time"]
+            found_next = True
+            continue
+        found_next = False
+        # If we get here, it's a normal line of text hopefully...
+        time_fmt = "" if strip_time else f" ({time})"
+        final.append(f"{sender}{time_fmt}:  {line}")
+    return "\n".join(final)
 # endregion
 
 
@@ -637,6 +692,18 @@ def unescape(characters: str):
     for char in characters:
         data = data.replace(f"\\{char}", char)
     pyperclip.copy(data)
+    echo(pyperclip.paste())
+# endregion
+
+
+# region chat programs
+@poly.command(name="slack", help="Strip out all the crap when copying from Slack")
+@click.option("-t", "--strip-time", is_flag=True, help="Remove the timestamps to simplify output")
+@click.option("-i", "--strip-img", is_flag=True, help="Remove the image labels to simplify output")
+def slack(strip_time: bool, strip_img: bool):
+    data = get_clipboard()
+    final = slack_to_chat(data, strip_time, strip_img)
+    pyperclip.copy(final)
     echo(pyperclip.paste())
 # endregion
 

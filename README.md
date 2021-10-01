@@ -50,6 +50,15 @@ poly yaml --help
 ...etc
 ```
 
+## Chat Copypasta
+
+A slowly-expanding list of chat programs to copy/paste out of into a 
+more sane a readable format (thanks, emoji reactions...)
+
+Supported chat program(s):
+
+- Slack
+
 ## Conversions
 
 All of the following formats convert between each other:
