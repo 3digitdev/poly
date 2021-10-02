@@ -50,6 +50,23 @@ poly yaml --help
 ...etc
 ```
 
+## Chat Copypasta
+
+A slowly-expanding list of chat programs to copy/paste out of into a 
+more sane a readable format (thanks, emoji reactions...)
+
+The intention is for each command to support both the webapp and the desktop client
+for each of the chat programs (Yes, they copy differently.  No, you shouldn't be surprised.)
+
+Supported chat program(s):
+
+- Slack
+
+Future support:
+
+- Discord
+- MS Teams
+
 ## Conversions
 
 All of the following formats convert between each other:
