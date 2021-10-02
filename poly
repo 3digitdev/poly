@@ -247,8 +247,13 @@ def to_query_string(data: dict, encode: bool, quote_plus: bool = False):
 def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
     # Pulls emoji reactions off the chat
     emoji_regex = re.compile(r":.+:")
+    # Pulls thread information off the chat
+    thread_start_regex = re.compile(r"^\d+ repl(?:y|ies)$")
+    thread_regex = re.compile(r"^(?:[\w ]+)?\d+ \w+ agoView thread$")
     # Identifies when a line is a user's name/datetime
     sender_regex = re.compile(r"^(?P<name>.+) {2}(?P<time>\d+:\d+)$")
+    # Strips out emoji statuses on sender names
+    sender_no_emoji_regex = re.compile(r"^(?P<name>\w+)(?::[\w\-]+:)?$")
     # Identifies the timestamp for "secondary lines" after the first message for a user
     secondary_regex = re.compile(r"^(?P<time>\d+:\d+)$")
     # Identifies when you copied an image/video and it shows a title
@@ -264,13 +269,22 @@ def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
     found_next = False
     # Tracking for when you're finding emoji reactions.  So many reactions...
     found_emoji = False
+    # Tracking for finding "thread" details
+    found_thread = False
     for line in lines:
         # If they want, we skip those image/video titles
         if strip_img and attach_regex.match(line):
             continue
-        # Drop this crap
+        # Drop that emoji crap
         if emoji_regex.match(line):
             found_emoji = True
+            continue
+        # That thread crap too
+        if found_thread and thread_regex.match(line):
+            found_thread = False
+            continue
+        if thread_start_regex.match(line):
+            found_thread = True
             continue
         # This is for the "emoji count" for each reaction.
         # Shows up as its own line cuz why not?
@@ -282,7 +296,8 @@ def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
         sender_match = sender_regex.match(line)
         if sender_match:
             parts = sender_match.groupdict()
-            sender = parts["name"]
+            sner_match = sender_no_emoji_regex.match(parts["name"])
+            sender = sner_match.groupdict()["name"]
             time = parts["time"]
             continue
         # "Secondary line" match
