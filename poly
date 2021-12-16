@@ -78,6 +78,8 @@ def get_toml_from_clipboard(verbose: bool = False) -> dict:
 def get_jwt_from_clipboard(secret: str = "", algorithm: str = "HS256") -> dict:
     algorithm = algorithm.upper()
     try:
+        if not secret:
+            return jwt.decode(get_clipboard(), options={"verify_signature": False}, algorithms=[algorithm])
         return jwt.decode(get_clipboard(), secret, algorithms=[algorithm])
     except jwt.exceptions.InvalidSignatureError:
         echo("Signature verification failed")
@@ -452,10 +454,10 @@ def jwt_group():
 
 
 @jwt_group.command(name="json", help="Convert JWT -> JSON")
-@click.option("-s", "--secret", required=True, help="The secret to use for decoding")
-@click.option("-a", "--algorithm", required=True, help="The algorithm to use for decoding")
+@click.option("-s", "--secret", required=False, default="", help="The secret to use for decoding")
+@click.option("-a", "--algorithm", required=False, default="HS256", help="The algorithm to use for decoding")
 @click.option("-p", "--pretty", is_flag=True, help="Format the JSON output")
-def jwt_json(secret: str, algorithm: str):
+def jwt_json(secret: str, algorithm: str, pretty: bool):
     data = get_jwt_from_clipboard(secret, algorithm)
     to_json(data, pretty)
 

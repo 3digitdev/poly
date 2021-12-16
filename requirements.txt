@@ -1,6 +1,6 @@
 PyYAML==5.4.1
 toml==0.10.2
-jwt==1.2.0
+pyjwt==2.3.0
 click==8.0.1
 pyperclip==1.8.2
 pillow==8.3.2
