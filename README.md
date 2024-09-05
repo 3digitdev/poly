@@ -27,6 +27,16 @@ pipx install poly-cli
 
 From this point on, the **Poly** CLI can be accessed with the cli command `poly`.  See "Usage" below
 
+## Environment Variable Config
+
+There are environment variables you can set to control the behavior of **Poly**:
+
+### `POLY_CFG_COLOR`
+
+**Default:  `1`**
+
+Setting this value to `0` will result in no syntax highlighting for output containing JSON/YAML/TOML.
+
 ## Usage
 
 This script will expect you to have the text it will manipulate in your clipboard.

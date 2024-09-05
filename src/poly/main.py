@@ -3,6 +3,7 @@ import click
 import hashlib
 import json
 import jwt
+import os
 import pyperclip
 import re
 import sys
@@ -14,7 +15,22 @@ from base64 import b64decode, b64encode
 from click import group, echo
 from PIL import ImageColor
 from random import randrange
-from typing import Callable, Tuple
+from rich.console import Console
+from rich.syntax import Syntax
+from typing import Callable
+
+
+def print_code(code: str, fmt: str) -> None:
+    try:
+        color = int(os.environ.get('POLY_CFG_COLOR', '1')) == 1
+    except ValueError:
+        color = True
+    if not color:
+        echo(code)
+    else:
+        syntax = Syntax(code, fmt, theme='monokai', line_numbers=True)
+        c = Console()
+        c.print(syntax)
 
 
 # region error handling
@@ -92,7 +108,7 @@ def get_jwt_from_clipboard(secret: str = '', algorithm: str = 'HS256') -> dict:
 
 
 @handle_unknown_error
-def get_query_params_from_clipboard(include_url: bool, decode: bool, quote_plus: bool = False) -> dict:
+def get_query_params_from_clipboard(include_url: bool, unquote: bool, quote_plus: bool = False) -> dict:
     url = pyperclip.paste()
     parts = url.split('?')
     if len(parts) == 2:
@@ -104,7 +120,7 @@ def get_query_params_from_clipboard(include_url: bool, decode: bool, quote_plus:
     else:
         echo('No valid query string in clipboard')
         sys.exit(1)
-    if decode:
+    if unquote:
         param_str = urllib.parse.unquote_plus(param_str) if quote_plus else urllib.parse.unquote(param_str)
     params = urllib.parse.parse_qs(param_str)
     data = {}
@@ -129,7 +145,7 @@ def get_hex_from_clipboard(rgba: bool = False) -> str:
 
 
 @handle_unknown_error
-def get_rgb_from_clipboard() -> Tuple[int, int, int]:
+def get_rgb_from_clipboard() -> tuple[int, int, int]:
     data = get_clipboard()
     if not re.match(r'\(?\d{1,3}, ?\d{1,3}, ?\d{1,3}\)?', data):
         echo('No valid RGB color string on the clipboard, needs to be format (0, 0, 0)')
@@ -138,7 +154,7 @@ def get_rgb_from_clipboard() -> Tuple[int, int, int]:
 
 
 @handle_unknown_error
-def get_rgba_from_clipboard() -> Tuple[int, int, int, int]:
+def get_rgba_from_clipboard() -> tuple[int, int, int, int]:
     data = get_clipboard()
     if not re.match(r'\(?\d{1,3}, ?\d{1,3}, ?\d{1,3}, ?\d{1,3}\)?', data):
         echo('No valid RGBA color string on the clipboard, needs to be format (0, 0, 0, 0)')
@@ -151,21 +167,21 @@ def get_rgba_from_clipboard() -> Tuple[int, int, int, int]:
 
 # region converter functions
 @handle_unknown_error
-def to_json(data: dict, pretty=False):
-    pyperclip.copy(json.dumps(data, indent=4) if pretty else json.dumps(data))
-    echo(pyperclip.paste())
+def to_json(data: dict, fancy=False):
+    pyperclip.copy(json.dumps(data, indent=4) if fancy else json.dumps(data))
+    print_code(pyperclip.paste(), 'json')
 
 
 @handle_unknown_error
 def to_yaml(data: dict):
     pyperclip.copy(yaml.dump(data, sort_keys=False))
-    echo(pyperclip.paste())
+    print_code(pyperclip.paste(), 'yaml')
 
 
 @handle_unknown_error
 def to_toml(data: dict):
     pyperclip.copy(toml.dumps(data))
-    echo(pyperclip.paste())
+    print_code(pyperclip.paste(), 'toml')
 
 
 @handle_unknown_error
@@ -197,7 +213,7 @@ def from_b64(data: str):
 
 
 @handle_unknown_error
-def to_hash(data: str, hash: str, hashfn: Callable):
+def to_hash(data: str, hashfn: Callable):
     pyperclip.copy(hashfn(data.encode('utf-8')).hexdigest())
     echo(pyperclip.paste())
 
@@ -227,11 +243,11 @@ def convert_string_dict(data: dict) -> dict:
 
 
 @handle_unknown_error
-def to_query_string(data: dict, encode: bool, quote_plus: bool = False):
+def to_query_string(data: dict, quote: bool, quote_plus: bool = False):
     def fix_value(val):
         if not isinstance(val, str):
             val = json.dumps(val)
-        if encode:
+        if quote:
             return urllib.parse.quote_plus(val) if quote_plus else urllib.parse.quote(val)
         return val
 
@@ -260,7 +276,7 @@ def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
     sender_no_emoji_regex = re.compile(r'^(?P<name>\w+)(?::[\w\-]+:)?$')
     # Identifies the timestamp for "secondary lines" after the first message for a user
     secondary_regex = re.compile(r'^(?P<time>\d+:\d+)$')
-    # Identifies when you copied an image/video and it shows a title
+    # Identifies when you copied an image/video, and it shows a title
     # Probably missing some extensions but this should cover like 99% of them
     attach_regex = re.compile(r'^[\w_\-]*\.(png|jpe?g|gif|tiff|mov|mp4|m4v|webm|mkv|mpe?g4?|avi|vid) ?$')
     lines = [x for x in data.split('\n') if x != '']
@@ -335,7 +351,7 @@ def json_group():
 @click.option('-v', '--verbose', is_flag=True)
 def pretty(verbose: bool):
     data = get_json_from_clipboard(verbose)
-    to_json(data, pretty=True)
+    to_json(data, fancy=True)
 
 
 @json_group.command(name='one-line', help='Compress JSON to a single line string')
@@ -372,7 +388,7 @@ def json_jwt(secret: str, algorithm: str, verbose: bool):
 @click.option('-v', '--verbose', is_flag=True)
 def json_query_string(verbose: bool):
     data = get_json_from_clipboard(verbose)
-    to_query_string(data, encode=False)
+    to_query_string(data, quote=False)
 
 
 # endregion
@@ -411,7 +427,7 @@ def yaml_jwt(secret: str, algorithm: str, verbose: bool):
 @click.option('-v', '--verbose', is_flag=True)
 def yaml_query_string(verbose: bool):
     data = get_yaml_from_clipboard(verbose)
-    to_query_string(data, encode=False)
+    to_query_string(data, quote=False)
 
 
 # endregion
@@ -451,7 +467,7 @@ def toml_jwt(secret: str, algorithm: str, verbose: bool):
 @click.option('-v', '--verbose', is_flag=True)
 def toml_query_string(verbose: bool):
     data = get_toml_from_clipboard(verbose)
-    to_query_string(data, encode=False)
+    to_query_string(data, quote=False)
 
 
 # endregion
@@ -493,7 +509,7 @@ def jwt_toml(secret: str, algorithm: str):
 @click.option('-a', '--algorithm', required=True, help='The algorithm to use for decoding')
 def jwt_query_string(secret: str, algorithm: str):
     data = get_jwt_from_clipboard(secret, algorithm)
-    to_query_string(data, encode=False)
+    to_query_string(data, quote=False)
 
 
 # endregion
@@ -512,7 +528,7 @@ def query_string():
 )
 @click.option('-u', '--include-url', is_flag=True, help="If present, the URL will also be included with the 'url' key")
 def query_string_json(pretty: bool, convert: bool, include_url: bool):
-    data = get_query_params_from_clipboard(include_url, decode=False)
+    data = get_query_params_from_clipboard(include_url, unquote=False)
     if convert:
         data = convert_string_dict(data)
     to_json(data, pretty)
@@ -524,7 +540,7 @@ def query_string_json(pretty: bool, convert: bool, include_url: bool):
 )
 @click.option('-u', '--include-url', is_flag=True, help="If present, the URL will also be included with the 'url' key")
 def query_string_yaml(convert: bool, include_url: bool):
-    data = get_query_params_from_clipboard(include_url, decode=False)
+    data = get_query_params_from_clipboard(include_url, unquote=False)
     if convert:
         data = convert_string_dict(data)
     to_yaml(data)
@@ -536,7 +552,7 @@ def query_string_yaml(convert: bool, include_url: bool):
 )
 @click.option('-u', '--include-url', is_flag=True, help="If present, the URL will also be included with the 'url' key")
 def query_string_toml(convert: bool, include_url: bool):
-    data = get_query_params_from_clipboard(include_url, decode=False)
+    data = get_query_params_from_clipboard(include_url, unquote=False)
     if convert:
         data = convert_string_dict(data)
     to_toml(data)
@@ -551,7 +567,7 @@ def query_string_toml(convert: bool, include_url: bool):
 @click.option('-u', '--include-url', is_flag=True, help="If present, the URL will also be included with the 'url' key")
 @click.option('-v', '--verbose', is_flag=True)
 def query_string_jwt(secret: str, algorithm: str, convert: bool, include_url: bool, verbose: bool):
-    data = get_query_params_from_clipboard(include_url, decode=False)
+    data = get_query_params_from_clipboard(include_url, unquote=False)
     if convert:
         data = convert_string_dict(data)
     to_jwt(data, secret, algorithm, verbose)
@@ -569,15 +585,15 @@ def poly_url():
 @poly_url.command(name='encode', help='Encode a string with URL-encoding')
 @click.option('-q', '--quote-plus', is_flag=True, help="If present, will encode spaces as '+' rather than '%20'")
 def encode(quote_plus: bool):
-    data = get_query_params_from_clipboard(False, decode=False)
-    to_query_string(data, encode=True, quote_plus=quote_plus)
+    data = get_query_params_from_clipboard(False, unquote=False)
+    to_query_string(data, quote=True, quote_plus=quote_plus)
 
 
 @poly_url.command(name='decode', help='Decode a URL-encoded string')
 @click.option('-q', '--quote-plus', is_flag=True, help="If present, this will decode the query string '+' as a space")
 def decode(quote_plus: bool):
-    data = get_query_params_from_clipboard(False, decode=True, quote_plus=quote_plus)
-    to_query_string(data, encode=False, quote_plus=quote_plus)
+    data = get_query_params_from_clipboard(False, unquote=True, quote_plus=quote_plus)
+    to_query_string(data, quote=False, quote_plus=quote_plus)
 
 
 # endregion
@@ -667,8 +683,7 @@ def rgb_group():
 @rgb_group.command(name='hex', help='Convert RGB -> Hex')
 def rgb_hex():
     r, g, b = get_rgb_from_clipboard()
-    hex = f'#{r:02x}{g:02x}{b:02x}'.upper()
-    pyperclip.copy(hex)
+    pyperclip.copy(f'#{r:02x}{g:02x}{b:02x}'.upper())
     echo(pyperclip.paste())
 
 
@@ -684,8 +699,7 @@ def rgba_group():
 @rgba_group.command(name='hex', help='Convert RGBA -> Hex')
 def rgba_hex():
     r, g, b, a = get_rgba_from_clipboard()
-    hex = f'#{r:02x}{g:02x}{b:02x}{a:02x}'.upper()
-    pyperclip.copy(hex)
+    pyperclip.copy(f'#{r:02x}{g:02x}{b:02x}{a:02x}'.upper())
     echo(pyperclip.paste())
 
 

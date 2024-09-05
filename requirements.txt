@@ -5,14 +5,22 @@
 #    pip-compile --output-file=requirements.txt
 #
 click==8.1.7
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
+markdown-it-py==3.0.0
+    # via rich
+mdurl==0.1.2
+    # via markdown-it-py
 pillow==10.4.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
+pygments==2.18.0
+    # via rich
 pyjwt==2.8.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pyperclip==1.9.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pyyaml==6.0.2
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
+rich==13.8.0
+    # via poly-cli (pyproject.toml)
 toml==0.10.2
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
