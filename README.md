@@ -4,27 +4,28 @@ A simple command for converting and processing data from your clipboard.
 
 ## Installation
 
-### Unix-based Install Script
+### Via `pip`
 
-**NOTE:  NEVER BLINDLY RUN ANY SCRIPT THAT ASKS FOR `sudo`!**  
-Please inspect the file first by viewing the raw file from the URL 
-in the command below before piping it to `/bin/bash`.
+**Poly** is available on PyPi under the name `poly-cli`.  To install it, simply do
 
-The install script needs `sudo` for copying the script into
-`/usr/bin` and setting it to be executable.
-
-```sh
-sudo /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/3digitdev/poly/master/install.sh)"
+```bash
+python3 -m pip install poly-cli
 ```
 
-_(requires `sudo` permission, also will prompt to install Python packages):_
+### Via `pipx`
 
-### Windows Support [FUTURE]
+**From Python 3.12 and on, especially on Mac, you are warned against/forbidden from installing
+Python packages in an "externally-managed" environment (AKA in user space).**
 
-This script is not designed to support Windows at this time.
+PIP will recommend that you install things using `pipx` which should manage virtual environments for you.
 
-Feel free to make a PR to add support
-and install instructions!
+To install **Poly** this way, the interface is the same, so simply do
+
+```bash
+pipx install poly-cli
+```
+
+From this point on, the **Poly** CLI can be accessed with the cli command `poly`.  See "Usage" below
 
 ## Usage
 

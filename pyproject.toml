@@ -1,0 +1,71 @@
+[project]
+name = "poly-cli"
+description = "CLI tool for text and clipboard manipulation"
+requires-python = ">=3.12"
+version = "1.0.0"
+authors = [
+    {email = "poly@3digit.dev"}
+]
+maintainers = [
+    {email = "poly@3digit.dev"}
+]
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: MacOS",
+    "Operating System :: Unix",
+]
+dependencies = [
+    "PyYAML >= 6.0.2, < 7",
+    "toml >= 0.10.2, < 1",
+    "pyjwt >= 2.8.0, < 3",
+    "click >= 8.1.0, < 9",
+    "pyperclip >= 1.9.0, < 2",
+    "pillow >= 10, < 11"
+]
+
+[project.urls]
+Homepage = "https://github.com/3digitdev/poly"
+Issues = "https://github.com/3digitdev/poly/issues"
+
+[project.scripts]
+poly = "poly.main:poly"
+
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit >= 3.6.0, < 4",
+    "ruff >= 0.1.14, < 1",
+    "pip-tools >= 7.3.0, < 8",
+    "twine >= 5.0.0, < 6",
+    "pytest >= 8.0.2, < 9",
+    "cython >= 3.0.10, < 4"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
+
+[tool.hatch.version]
+path = "src/poly/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.DS_STORE",
+    "/.gitignore",
+    "/.pre-commit-config.yaml",
+    "/.dev-requirements.txt"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/poly"]
