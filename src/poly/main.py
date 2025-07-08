@@ -28,7 +28,7 @@ def print_code(code: str, fmt: str) -> None:
     if not color:
         echo(code)
     else:
-        syntax = Syntax(code, fmt, theme='monokai', line_numbers=True)
+        syntax = Syntax(code, fmt, theme='monokai', line_numbers=sys.stdin.isatty())
         c = Console()
         c.print(syntax)
 
@@ -51,10 +51,17 @@ def handle_unknown_error(f):
 
 
 # region clipboard functions
-def get_clipboard() -> str:
-    data = pyperclip.paste()
-    if not data:
-        echo('No text in the clipboard')
+def get_clipboard(use_stdin=False) -> str:
+    """
+    Get the current clipboard content.  If STDIN is readable, we will start with that,
+    otherwise we will use the clipboard.  This allows a default of using linux pipes
+    """
+    if use_stdin:
+        data = sys.stdin.read()
+    else:
+        data = pyperclip.paste()
+    if not data or data.strip() == '':
+        echo('No text available')
         sys.exit(1)
     return data
 
@@ -337,8 +344,12 @@ def slack_to_chat(data: str, strip_time: bool, strip_img: bool) -> str:
 
 
 @group()
-def poly():
-    pass
+@click.option(
+    '-z', '--use-stdin', is_flag=True, default=False, help='Use stdin as the input source instead of the clipboard'
+)
+@click.pass_context
+def poly(ctx, use_stdin: bool = False):
+    ctx.obj = {'stdin': use_stdin}
 
 
 # region json commands
@@ -756,6 +767,38 @@ def unescape(characters: str):
     data = get_clipboard()
     for char in characters:
         data = data.replace(f'\\{char}', char)
+    pyperclip.copy(data)
+    echo(pyperclip.paste())
+
+
+@poly.command(name='split', help='Split on separator and display as a list')
+@click.option('-s', '--separator', default=',', help="The separator to split on, default is ','")
+@click.option(
+    '-b',
+    '--bullet',
+    default='-',
+    help="The bullet point to use for the list, default is '-'.  If a number is provided, will number results",
+)
+@click.pass_obj
+def split_list(obj, separator: str = ',', bullet: str = '-'):
+    numbered = bullet.isdigit()
+    data = get_clipboard(obj['stdin']).strip()
+    if numbered:
+        result = ''
+        for i, item in enumerate(data.split(separator), start=1):
+            result += f'{i}. {item.strip()}\n'
+        result = result.strip('\n')
+    else:
+        data = f'\n{bullet} '.join([p.strip() for p in data.split(separator)])
+        result = f'{bullet} {data}'
+    pyperclip.copy(result)
+    echo(pyperclip.paste())
+
+
+@poly.command(name='clean-err', help='Clean up giant copy-paste errors with stack traces')
+def clean_err():
+    data = get_clipboard()
+    data = data.replace('\\\\', '\\').replace('\\n', '\n').replace('\\"', '"')
     pyperclip.copy(data)
     echo(pyperclip.paste())
 

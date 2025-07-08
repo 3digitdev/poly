@@ -61,6 +61,17 @@ poly yaml --help
 ...etc
 ```
 
+## STDIN and Unix Pipes
+
+If you would like to pipe input into `poly` you can use the `-z/--use-stdin` command.  Any command in `poly` can use this
+and the input will be read from stdin instead of the clipboard, allowing full unix piping, e.e.g
+
+```sh
+echo "{ \"foo\": \"bar\" }" | poly -z json pretty
+```
+
+**NOTE: Even when using `-z/--use-stdin`, the output will still be sent to the clipboard AND stdout.**
+
 ## Chat Copypasta
 
 A slowly-expanding list of chat programs to copy/paste out of into a 
@@ -71,7 +82,7 @@ for each of the chat programs (Yes, they copy differently.  No, you shouldn't be
 
 Supported chat program(s):
 
-- Slack
+- Slack (**NOTE: CURRENTLY BROKEN AFTER SLACK UPDATED MESSAGE FORMAT**)
 
 Future support:
 
@@ -203,3 +214,4 @@ Both `encode`/`decode` also support `-q, --quote-plus` which allows for encoding
 - **Spongebob (`sponge`, `spongebob`)**: _I WoNDeR What ThIS doEs_
 - **Smart Quotes (`quotes`)**:  Replaces those stupid `“`/`”`/`‘`/`’` with proper quotes `"`/`'`
 - **[Un]Escape Text (`escape`/`unescape`)**:  Add/remove `\` in a string for given characters
+- **Split Text (`split`)**: Split a string into multiple lines based on a given separator (default is `,`)
