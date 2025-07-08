@@ -15,9 +15,9 @@ charset-normalizer==3.3.2
 click==8.1.7
     # via
     #   pip-tools
-    #   poly (pyproject.toml)
+    #   poly-cli (pyproject.toml)
 cython==3.0.11
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 distlib==0.3.8
     # via virtualenv
 docutils==0.21.2
@@ -28,8 +28,6 @@ identify==2.6.0
     # via pre-commit
 idna==3.8
     # via requests
-importlib-metadata==8.4.0
-    # via twine
 iniconfig==2.0.0
     # via pytest
 jaraco-classes==3.4.0
@@ -56,35 +54,38 @@ packaging==24.1
     # via
     #   build
     #   pytest
+    #   twine
 pillow==10.4.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pip-tools==7.4.1
-    # via poly (pyproject.toml)
-pkginfo==1.10.0
-    # via twine
+    # via poly-cli (pyproject.toml)
+pkginfo==1.12.1.2
+    # via
+    #   poly-cli (pyproject.toml)
+    #   twine
 platformdirs==4.2.2
     # via virtualenv
 pluggy==1.5.0
     # via pytest
 pre-commit==3.8.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pygments==2.18.0
     # via
     #   readme-renderer
     #   rich
 pyjwt==2.9.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pyperclip==1.9.0
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pyproject-hooks==1.1.0
     # via
     #   build
     #   pip-tools
 pytest==8.3.2
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 pyyaml==6.0.2
     # via
-    #   poly (pyproject.toml)
+    #   poly-cli (pyproject.toml)
     #   pre-commit
 readme-renderer==44.0
     # via twine
@@ -97,13 +98,15 @@ requests-toolbelt==1.0.0
 rfc3986==2.0.0
     # via twine
 rich==13.8.0
-    # via twine
+    # via
+    #   poly-cli (pyproject.toml)
+    #   twine
 ruff==0.6.3
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
 toml==0.10.2
-    # via poly (pyproject.toml)
-twine==5.1.1
-    # via poly (pyproject.toml)
+    # via poly-cli (pyproject.toml)
+twine==6.0.1
+    # via poly-cli (pyproject.toml)
 urllib3==2.2.2
     # via
     #   requests
@@ -112,8 +115,6 @@ virtualenv==20.26.3
     # via pre-commit
 wheel==0.44.0
     # via pip-tools
-zipp==3.20.1
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip

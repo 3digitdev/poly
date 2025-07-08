@@ -2,7 +2,7 @@
 name = "poly-cli"
 description = "CLI tool for text and clipboard manipulation"
 requires-python = ">=3.12"
-version = "1.2.0"
+version = "1.2.1"
 authors = [
     {email = "poly@3digit.dev"}
 ]
@@ -31,7 +31,7 @@ Homepage = "https://github.com/3digitdev/poly"
 Issues = "https://github.com/3digitdev/poly/issues"
 
 [project.scripts]
-poly-dev = "poly.main:poly"
+poly = "poly.main:poly"
 
 
 [project.optional-dependencies]
@@ -39,7 +39,9 @@ dev = [
     "pre-commit >= 3.6.0, < 4",
     "ruff >= 0.1.14, < 1",
     "pip-tools >= 7.3.0, < 8",
-    "twine >= 5.0.0, < 6",
+    # twine locked to 6.0.1
+    "twine == 6.0.1",
+    "pkginfo == 1.12.1.2",
     "pytest >= 8.0.2, < 9",
     "cython >= 3.0.10, < 4"
 ]
